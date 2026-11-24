@@ -209,6 +209,53 @@ fun JarvisSettingsSectionPage(page: JarvisSettingsPage, cardBg: Color, cardBorde
                     JChips(listOf("" to "Not set", "female" to "Female", "male" to "Male", "neutral" to "Neutral"), persona) { P.persona.set(it) }
                     JHint("The grammatical gender Jarvis uses for itself. It matters in languages like Hindi (“main kar rahi hoon” / “main kar raha hoon”). " +
                         "Pick a matching voice under Voice output.")
+                    val jarvisLang by P.jarvisLanguage.state.collectAsState()
+                    Text("Reply language (Jarvis only)", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    JChips(listOf("en" to "English", "darija" to "Darija (MA)"), jarvisLang) { P.jarvisLanguage.set(it) }
+                    JHint("Only affects OsHeN/Jarvis. Other agents (Claude, OpenCode, Codex, Antigravity) keep their own language.")
+                    val userName by P.userName.state.collectAsState()
+                    OutlinedTextField(
+                        value = userName, onValueChange = { P.userName.set(it.take(80)) },
+                        label = { Text("What should I call you?") },
+                        placeholder = { Text("e.g. Youssef", fontSize = 12.sp) },
+                        modifier = Modifier.fillMaxWidth(), singleLine = true
+                    )
+                    var recording by remember { mutableStateOf(false) }
+                    var heardName by remember { mutableStateOf<String?>(null) }
+                    OutlinedButton(onClick = {
+                        if (recording) return@OutlinedButton
+                        recording = true
+                        heardName = null
+                        val transcriber = ai.antigem.data.jarvis.AndroidSpeechTranscriber(context) { P.sttLanguage.value }
+                        val buf = StringBuilder()
+                        transcriber.startTranscriptionSession(
+                            scope = scope, cascadeId = "", preCursorText = "", postCursorText = "",
+                            onPartialText = { t -> buf.clear(); buf.append(t) },
+                            onFinalText = { t -> if (t.isNotBlank()) { buf.clear(); buf.append(t) } },
+                            onError = { e -> heardName = "Error: $e"; recording = false }
+                        )
+                        scope.launch {
+                            kotlinx.coroutines.delay(6000)
+                            transcriber.cancelTranscriptionSession()
+                            recording = false
+                            val text = buf.toString().trim().ifBlank { "" }
+                            if (text.isNotBlank()) {
+                                val name = text.split(Regex("\\s+")).lastOrNull()?.trim(' ', ',', '.', '!', '?') ?: text
+                                heardName = "Heard: name $name"
+                                if (name.isNotBlank()) {
+                                    P.userName.set(name.take(80))
+                                    if (P.aboutUser.value.isBlank()) P.aboutUser.set("Call me $name.")
+                                }
+                            } else {
+                                heardName = "Nothing heard. Try again."
+                            }
+                        }
+                    }, enabled = !recording) {
+                        Text(if (recording) "Listening..." else "Record my name by voice")
+                    }
+                    heardName?.let { Text(it, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
+                    JHint("Say your name. It is saved and used in greetings. You can edit it above.")
+
                     val about by P.aboutUser.state.collectAsState()
                     OutlinedTextField(
                         value = about, onValueChange = { P.aboutUser.set(it.take(2000)) },
@@ -454,7 +501,8 @@ fun JarvisSettingsSectionPage(page: JarvisSettingsPage, cardBg: Color, cardBorde
                     JChips(listOf("auto" to "Same as agent", "claude" to "Claude", "agy" to "Antigravity", "android" to "This device"), stt) { P.sttEngine.set(it) }
                     JHint("“This device” uses Android's recognizer and needs no sign-in. If the agent's dictation fails, Jarvis switches to the device for the rest of the session.")
                     val lang by P.sttLanguage.state.collectAsState()
-                    JField("Language (e.g. en, hi, es)", lang) { P.sttLanguage.set(it) }
+                    JChips(listOf("en" to "English", "ar-MA" to "Darija (MA)", "ar" to "Arabic", "fr" to "French"), lang) { P.sttLanguage.set(it) }
+                    JField("Language code (override)", lang) { P.sttLanguage.set(it) }
                 }
                 JCard(cardBg, cardBorder, "Voice shortcuts") {
                     JHint("Your own phrases that act at once, without asking the model, when you say them on their own (optionally with “Jarvis” or “please”). " +
@@ -500,7 +548,8 @@ fun JarvisSettingsSectionPage(page: JarvisSettingsPage, cardBg: Color, cardBorde
                                 }
                             }
                         }
-                        JField("Language (optional, e.g. en-US)", language) { P.ttsLanguage.set(it) }
+                        JChips(listOf("ar-MA" to "Darija (MA)", "ar" to "Arabic", "en-US" to "English (US)", "fr-FR" to "French"), language) { P.ttsLanguage.set(it) }
+                        JField("Language code (override)", language) { P.ttsLanguage.set(it) }
                     } else {
                         val key by P.ttsApiKey.state.collectAsState()
                         JField("API key", key, secret = true) { P.ttsApiKey.set(it) }

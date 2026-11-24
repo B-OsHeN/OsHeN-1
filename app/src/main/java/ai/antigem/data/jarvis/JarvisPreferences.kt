@@ -33,6 +33,21 @@ object JarvisPreferences {
             e.apply()
         }
 
+        /** Persist synchronously (commit) — use for values that must survive a process death. */
+        fun setSync(v: T) {
+            flow.value = v
+            val e = sp?.edit() ?: return
+            when (v) {
+                is Boolean -> e.putBoolean(key, v)
+                is Int -> e.putInt(key, v)
+                is Long -> e.putLong(key, v)
+                is Float -> e.putFloat(key, v)
+                is String -> e.putString(key, v)
+                else -> {}
+            }
+            e.commit()
+        }
+
         @Suppress("UNCHECKED_CAST")
         internal fun load(p: SharedPreferences) {
             val d = default
@@ -96,6 +111,10 @@ object JarvisPreferences {
     val persona = pref("persona", "")
     /** What the user wants Jarvis to know: what to call them, language, context, standing instructions. */
     val aboutUser = pref("about_user", "")
+    /** The language Jarvis replies in: "en" (English) or "darija" (Moroccan Arabic / Darija). Only affects Jarvis, not other agents. */
+    val jarvisLanguage = pref("jarvis_language", "en")
+    /** The user's name, as they want to be called (can be captured by voice). */
+    val userName = pref("user_name", "")
     /** "<chat id>|<hash>": the chat that already knows the current persona and notes. */
     val profileSentFor = pref("profile_sent_for", "")
 

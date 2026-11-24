@@ -295,10 +295,15 @@ object JarvisController {
     /** Hands-free keeps the microphone service alive so the wake phrase and the headset button work with the screen off. */
     fun setHandsFree(on: Boolean) {
         val target = on && JarvisPreferences.enabled.value && JarvisPreferences.voiceAssistant.value
-        JarvisPreferences.handsFree.set(target)
+        JarvisPreferences.handsFree.setSync(target)
         if (target) {
-            if (!hasMic()) { showNotice("Allow the microphone first.", "mic"); JarvisPreferences.handsFree.set(false); return }
-            JarvisService.start(app)
+            if (!hasMic()) { showNotice("Allow the microphone first.", "mic"); JarvisPreferences.handsFree.setSync(false); return }
+            try {
+                JarvisService.start(app)
+            } catch (e: Exception) {
+                JarvisPreferences.handsFree.setSync(false)
+                showNotice("Hands-free couldn't start: ${e.message ?: "Android blocked the microphone service"}. Keep the app in the foreground and try again, or use the Quick Settings tile.", "mic")
+            }
         } else {
             stopWake()
             JarvisService.stop(app)

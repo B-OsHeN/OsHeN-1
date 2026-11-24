@@ -121,6 +121,7 @@ enum class SettingsSection(val title: String, val subtitle: String) {
     AGENT_MEMORY("Agent memory & history", "Memories every agent keeps across chats, and past chats they can look up"),
     AGENT_HISTORY("Saved chats", "The chat history the agents can look up: read, edit or remove it"),
     EGM("EGM · Elephant-Goldfish", "Plan a design and have fresh reviewers attack it before any code (/egm)"),
+    SPECIALISTS("Specialists", "Jarvis's specialist agents (lawyer, accountant, geologist, …) and their knowledge bases"),
     JARVIS("Jarvis", "Hands-free voice control of the whole app"),
     JARVIS_AGENT("Jarvis · Agent", "Which agent and model Jarvis talks to"),
     JARVIS_PERSONALITY("Jarvis · Personality & you", "How Jarvis speaks, and what it should know about you"),
@@ -723,6 +724,7 @@ fun SettingsDialog(
                         cardBg = cardBg,
                         cardBorder = cardBorder
                     )
+                    SettingsSection.SPECIALISTS -> SpecialistsScreen(cardBg = cardBg, cardBorder = cardBorder)
                     SettingsSection.ANTIGRAVITY -> AntigravitySettingsMenu(
                         mcpServers = mcpServers,
                         allSkills = allSkills,
@@ -991,6 +993,9 @@ private fun MainSettingsMenu(
                     if (codexState == ai.antigem.data.agent.codex.CodexState.READY) QuotaGreen else c.warning) else null,
                 row(SettingsSection.JARVIS, Icons.Outlined.RecordVoiceOver, c.accentTeal, if (jarvisOn) "On" else "Off",
                     if (jarvisOn) QuotaGreen else null)
+            ),
+            listOf(
+                row(SettingsSection.SPECIALISTS, Icons.Outlined.Groups, c.accentPink),
             ),
             listOf(
                 row(SettingsSection.WEBVIEW_EXTENSIONS, Icons.Outlined.Extension, c.accentAlt),

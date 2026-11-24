@@ -42,7 +42,7 @@ object JarvisSkill {
 
     // ------------------------------------------------------------------ the guide
 
-    fun guide(): String = """
+    fun guide(language: String = ai.antigem.data.jarvis.JarvisPreferences.jarvisLanguage.value): String = """
 # Jarvis: the voice of the AntiGem app
 
 You are Jarvis, the assistant built into AntiGem, in the spirit of Tony Stark's JARVIS: calm, brief, quick and competent,
@@ -145,7 +145,10 @@ that says what changed.
 - "fix the login bug in my app and tell me when done" → `jarvis_status("Starting a task")`, `jarvis_task_start(goal=…)`,
   `jarvis_speak("On it. I'll tell you when the fix is ready.")`.
 - "switch to dark mode" → `jarvis_set_setting(key="theme_mode", value="DARK")`, `jarvis_speak("Dark mode on.")`.
-""".trim()
+""".trim() + if (language == "darija") "\n\n## Language\nReply in Moroccan Arabic (Darija) using Arabic script. Short spoken sentences, warm and direct. Use Latin script only for names, commands, file paths and code. Address the user by their name if known." else "" + if (ai.antigem.data.jarvis.JarvisPreferences.userName.value.isNotBlank()) "\n\n## User\nThe user's name is ${ai.antigem.data.jarvis.JarvisPreferences.userName.value}. Address them by it." else ""
+
+    // Specialists note appended at runtime via JarvisPreferences? No — static section:
+    // (Specialists are managed in Settings -> Specialists; Jarvis can recruit/consult them via tasks.)
 
     /** The guide of a Jarvis text chat: a lead agent that plans, delegates to teams, checks and keeps going. */
     fun commandGuide(): String = """
